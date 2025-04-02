@@ -12,7 +12,11 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 # ---------------------------
 # Load Environment Variables
 # ---------------------------
-load_dotenv()
+# Specify the path to your .env file
+dotenv_path = '/Users/chenzhiq/.mytoken_env'
+load_dotenv(dotenv_path=dotenv_path)
+
+# load_dotenv()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 # ---------------------------
@@ -115,7 +119,7 @@ def main():
     os.makedirs(images_folder, exist_ok=True)
 
     query_keywords = "Mandalay earthquake OR Myanmar earthquake"
-    date_list = ["2025-03-28", "2025-03-29", "2025-03-30", "2025-03-31"]
+    date_list = ["2025-03-28", "2025-03-29", "2025-03-30", "2025-03-31", "2025-04-01"]
 
     all_records = []
     global_idx = 1

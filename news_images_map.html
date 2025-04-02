@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2025 Mandalay, Myanmar Earthquake: News Images Gallery</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    footer {
+      text-align: center;
+      padding: 3px;
+      background-color: DarkSalmon;
+      color: white;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .gallery img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+    .gallery img:hover {
+      transform: scale(1.03);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      max-width: 90vw;
+      max-height: 90vh;
+      width: 90%;
+      padding: 20px;
+      border-radius: 10px;
+      position: relative;
+      overflow: auto;
+    }
+    .modal img {
+      max-height: 80vh;
+      width: auto;
+      max-width: 100%;
+      margin-bottom: 15px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      cursor: pointer;
+      user-select: none;
+      background: #fff;
+      border-radius: 5px;
+      padding: 5px 10px;
+    }
+    .nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 36px;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      padding: 10px 15px;
+      z-index: 1001;
+    }
+    .nav.left {
+      left: 20px;
+    }
+    .nav.right {
+      right: 20px;
+    }
+    .summary {
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .caption {
+      font-style: italic;
+      text-align: center;
+    }
+    .metadata {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .stats {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>2025 Mandalay, Myanmar Earthquake: News Images Gallery</h1>
+  <div class="gallery" id="gallery"></div>
+
+  <div class="modal" id="modal">
+    <span class="nav left" onclick="navigateModal(-1)">&#8592;</span>
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <img id="modal-image" src="" alt="" />
+      <div class="summary" id="modal-summary"></div>
+      <div class="caption" id="modal-caption"></div>
+      <div class="metadata" id="modal-tags"></div>
+      <div class="metadata" id="modal-sentiment"></div>
+      <div class="metadata" id="modal-discrepancy"></div>
+    </div>
+    <span class="nav right" onclick="navigateModal(1)">&#8594;</span>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <script>
+    let galleryData = [];
+    let currentIndex = 0;
+
+    fetch('gallery_data.json')
+      .then(response => response.json())
+      .then(data => {
+        galleryData = data;
+        const gallery = document.getElementById('gallery');
+
+        data.forEach((entry, index) => {
+          const img = document.createElement('img');
+          img.src = entry.image_file;
+          img.alt = entry.title;
+          img.onclick = () => openModal(index);
+          gallery.appendChild(img);
+        });
+      })
+      .catch(err => {
+        console.error("Failed to load gallery data:", err);
+      });
+
+    fetch('gallery_stats.json')
+      .then(res => res.json())
+      .then(stats => {
+        const el = document.getElementById('stats');
+        el.innerHTML = `
+          <h2>Gallery Summary</h2>
+          <p><strong>Text Summaries</strong> — Damaged Buildings: ${stats.summary_tags["Damaged Building"]}, Injury/Death: ${stats.summary_tags["Injury/Death"]}, Recovery: ${stats.summary_tags["Recovery"]}</p>
+          <p><strong>Image Tags</strong> — Damaged Buildings: ${stats.image_tags["Damaged Building"]}, Injury/Death: ${stats.image_tags["Injury/Death"]}, Recovery: ${stats.image_tags["Recovery"]}</p>
+        `;
+      });
+
+    function openModal(index) {
+      currentIndex = index;
+      const entry = galleryData[index];
+      document.getElementById('modal-image').src = entry.image_file;
+      document.getElementById('modal-summary').innerHTML = `<a href="${entry.url}" target="_blank">${entry.summary}</a>`;
+      document.getElementById('modal-caption').textContent = entry.caption;
+      document.getElementById('modal-tags').textContent = `Tags: ${entry.tags.join(', ')}`;
+      document.getElementById('modal-sentiment').textContent = `Sentiment: ${entry.sentiment}`;
+      document.getElementById('modal-discrepancy').textContent = `Discrepancy Score: ${entry.discrepancy_score}`;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    function navigateModal(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = galleryData.length - 1;
+      if (currentIndex >= galleryData.length) currentIndex = 0;
+      openModal(currentIndex);
+    }
+  </script>
+
+  <footer>
+    <p>Author: ZhiQiang Chen<br>
+    Created with the use of NewsAPI and OpenAI's GPT-3o and 4o engines<br>
+    <a href="mailto:chenzhiq@umkc.edu">chenzhiq@umkc.edu</a></p>
+  </footer>
+</body>
+</html>
