@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Loss & Resilience Mapping</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      #map { height: 80vh; }
+      .bar-container { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+      .bar-label { font-size: 12px; }
+      .bar {
+        height: 10px;
+        background-color: lightgray;
+        width: 100%;
+        position: relative;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0;
+      }
+      table.stats {
+        margin: 30px auto;
+        border-collapse: collapse;
+        font-family: sans-serif;
+      }
+      table.stats th, table.stats td {
+        border: 1px solid #ccc;
+        padding: 6px 12px;
+        text-align: center;
+      }
+      table.stats th {
+        background: #f0f0f0;
+      }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <h2 style="text-align:center;">Loss and Resilience Mapping</h2>
+    <div id="map"></div>
+    <div id="summary" style="padding: 20px; text-align: center;">
+      <h3>Loss-Resilience Statistics Summary</h3>
+      <div id="summary-table"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const map = L.map('map').setView([21.97, 96.08], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      function levelColor(level, type) {
+          const colors = {
+              loss: ['#aaa', '#f90', '#e00'],
+              resilience: ['#aaa', '#ff0', '#0a0']
+          };
+          return colors[type][level - 1] || '#ccc';
+      }
+
+      function addEntries(entries) {
+          // Add map markers
+          entries.forEach(entry => {
+              const lat = entry.latitude;
+              const lon = entry.longitude;
+              if (!lat || !lon) return;
+
+              const img = entry.image_url || "";
+              const caption = entry.caption || "";
+              const summary = entry.summary || "";
+              const loss = entry.lossLevel;
+              const resilience = entry.resilienceLevel;
+
+              const bar = (label, level, type) => `
+                <div class="bar-label">${label}</div>
+                <div class="bar">
+                  <div class="bar-fill" style="background-color: ${levelColor(level, type)}; width: ${level * 33.3}%;"></div>
+                </div>
+              `;
+
+              const popupContent = `
+                <div style='max-width:250px'>
+                  ${img ? `<img src="${img}" alt="image" style="width:100%;border-radius:6px;">` : ""}
+                  <p><strong>Caption:</strong> ${caption}</p>
+                  <p><strong>Summary:</strong> ${summary}</p>
+                  <div class='bar-container'>
+                    ${bar("Loss Level", loss, "loss")}
+                    ${bar("Resilience Level", resilience, "resilience")}
+                  </div>
+                </div>
+              `;
+
+              L.marker([lat, lon]).addTo(map).bindPopup(popupContent);
+          });
+
+          // Generate stats table
+          const statTable = Array(3).fill(0).map(() => Array(3).fill(0));
+          entries.forEach(entry => {
+              const l = entry.lossLevel;
+              const r = entry.resilienceLevel;
+              if (l && r) statTable[l - 1][r - 1]++;
+          });
+
+          const labels = ["None", "Moderate", "High"];
+          let html = "<table class='stats'><tr><th></th><th>Resilience: None</th><th>Moderate</th><th>High</th></tr>";
+          for (let i = 0; i < 3; i++) {
+              html += `<tr><th>Loss: ${labels[i]}</th>`;
+              for (let j = 0; j < 3; j++) {
+                  html += `<td>${statTable[i][j]}</td>`;
+              }
+              html += "</tr>";
+          }
+          html += "</table>";
+          document.getElementById("summary-table").innerHTML = html;
+      }
+
+      // Load external JSON
+      fetch("gallery_data_augmented.json")
+        .then(response => response.json())
+        .then(data => addEntries(data))
+        .catch(err => {
+          console.error("Error loading JSON:", err);
+          alert("Failed to load gallery_data_augmented.json.");
+        });
+    </script>
+</body>
+</html>
+
